@@ -53,7 +53,7 @@ impl Router {
 
     pub async fn handle(
         &self,
-        request: &Request,
+        request: Request,
         writer: futures::io::WriteHalf<async_std::net::TcpStream>,
     ) {
         let pathname = &request.pathname;
@@ -63,7 +63,8 @@ impl Router {
             if let Some(handler) = path.get(&method) {
                 info!("called handler on {}", pathname);
                 let response = Response::new(writer);
-                task::spawn(handler(request.clone(), response));
+                task::spawn(handler(request, response));
+                // handler(request, response).await;
             }
         }
     }

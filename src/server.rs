@@ -1,13 +1,15 @@
 use std::sync::Arc;
 
 use async_std::net::TcpListener;
+use async_std::net::TcpStream;
 use async_std::sync::Mutex;
-use async_std::task;
 
+use async_std::task;
 use futures::io::BufReader;
 use futures::stream::StreamExt;
 use futures::AsyncReadExt;
 
+use log::error;
 use log::info;
 use log::warn;
 
@@ -46,14 +48,31 @@ impl Server {
 
         let mut incoming = self.listener.incoming();
         while let Some(stream) = incoming.next().await {
-            let (reader, writer) = stream.unwrap().split();
-            let mut reader = BufReader::new(reader);
+            let router = self.router.clone();
+            task::spawn(handle_stream(stream, router));
+        }
 
+        Ok(())
+    }
+}
+
+impl App for Server {
+    fn get_router(&mut self) -> &Arc<Mutex<Router>> {
+        &self.router
+    }
+}
+
+// handling stream
+async fn handle_stream<T>(stream: Result<TcpStream, T>, router: Arc<Mutex<Router>>) {
+    match stream {
+        Ok(stream) => {
+            let (reader, writer) = stream.split();
+            let mut reader = BufReader::new(reader);
             match Request::parse_raw(&mut reader).await {
                 Ok(request) => {
                     let writer = writer;
-                    let router = self.router.lock().await;
-                    router.handle(&request, writer).await;
+                    let router = router.lock().await;
+                    router.handle(request, writer).await;
                 }
                 Err(err) => {
                     warn!("{}", err);
@@ -64,13 +83,8 @@ impl Server {
                 }
             };
         }
-
-        Ok(())
-    }
-}
-
-impl App for Server {
-    fn get_router(&mut self) -> &Arc<Mutex<Router>> {
-        &self.router
+        Err(_) => {
+            error!("");
+        }
     }
 }

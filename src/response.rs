@@ -46,8 +46,8 @@ impl Response {
         message.push_str(&status_line);
         message.push_str("\r\n");
 
+        headers.insert("Connection", "keep-alive");
         headers.insert("Content-Length", &content_len);
-        headers.insert("Content-Type", "text/plain");
         headers.insert("Date", date);
 
         for (key, value) in headers {
