@@ -4,6 +4,7 @@ use futures::Future;
 
 use std::collections::HashMap;
 use std::marker::Send;
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::sync::Arc;
 
@@ -55,6 +56,7 @@ impl Router {
         &self,
         request: Request,
         writer: futures::io::WriteHalf<async_std::net::TcpStream>,
+        views: PathBuf,
     ) {
         let pathname = &request.pathname;
         let method = &request.method;
@@ -62,7 +64,7 @@ impl Router {
         if let Some(path) = self.routes.get(pathname) {
             if let Some(handler) = path.get(&method) {
                 info!("called handler on {}", pathname);
-                let response = Response::new(writer);
+                let response = Response::new(writer, views);
                 task::spawn(handler(request, response));
                 // handler(request, response).await;
             }

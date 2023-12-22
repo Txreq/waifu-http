@@ -1,3 +1,5 @@
+use std::env;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use async_std::net::TcpListener;
@@ -22,6 +24,7 @@ use crate::Router;
 pub struct Server {
     pub port: u16,
     pub router: Arc<Mutex<Router>>,
+    views: PathBuf,
     listener: TcpListener,
 }
 
@@ -29,12 +32,15 @@ impl Server {
     pub async fn bind(port: u16) -> Result<Self, String> {
         env_logger::init();
         let router = Arc::new(Mutex::new(Router::new()));
+        let mut views = PathBuf::new();
+        views.push("./views");
 
         match TcpListener::bind(format!("127.0.0.1:{}", &port)).await {
             Ok(listener) => Ok(Self {
                 port,
                 listener,
                 router,
+                views: views,
             }),
             Err(_) => Err(String::from(format!(
                 "failed to bind listener to {}",
@@ -43,13 +49,18 @@ impl Server {
         }
     }
 
+    pub fn views(&mut self, path: PathBuf) {
+        self.views = path;
+    }
+
     pub async fn listen(&mut self) -> Result<(), String> {
         info!("local: http://127.0.0.1:{}", self.port);
 
         let mut incoming = self.listener.incoming();
         while let Some(stream) = incoming.next().await {
             let router = self.router.clone();
-            task::spawn(handle_stream(stream, router));
+            let views = self.views.clone();
+            task::spawn(handle_stream(stream, router, views));
         }
 
         Ok(())
@@ -63,7 +74,11 @@ impl App for Server {
 }
 
 // handling stream
-async fn handle_stream<T>(stream: Result<TcpStream, T>, router: Arc<Mutex<Router>>) {
+async fn handle_stream<T>(
+    stream: Result<TcpStream, T>,
+    router: Arc<Mutex<Router>>,
+    views: PathBuf,
+) {
     match stream {
         Ok(stream) => {
             let (reader, writer) = stream.split();
@@ -72,14 +87,13 @@ async fn handle_stream<T>(stream: Result<TcpStream, T>, router: Arc<Mutex<Router
                 Ok(request) => {
                     let writer = writer;
                     let router = router.lock().await;
-                    router.handle(request, writer).await;
+                    router.handle(request, writer, views).await;
                 }
                 Err(err) => {
                     warn!("{}", err);
-                    let mut response = Response::new(writer);
-                    response.set_status(HttpCode::BadRequest);
-                    response.set_content("Invalid request");
-                    response.send(None).await;
+                    let mut response = Response::new(writer, views);
+                    response.status(HttpCode::BadRequest);
+                    response.send("Invalid request").await;
                 }
             };
         }

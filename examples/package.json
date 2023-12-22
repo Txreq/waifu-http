@@ -1,0 +1,14 @@
+{
+  "name": "waifu-http",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {},
+  "scripts": {
+    "example": "RUST_LOG=trace cargo run --example=usage",
+    "example:release": "cargo run --example=usage --release"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
