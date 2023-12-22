@@ -8,8 +8,7 @@ async fn main() {
     // standard
     app.get("/", |req, mut res| {
         Box::pin(async move {
-            println!("{:#?}", req);
-            res.send(Some("hello")).await;
+            res.send(Some("Hello, world!")).await;
         })
     })
     .await
@@ -19,7 +18,7 @@ async fn main() {
     app.get("/sleep", |_req, mut res| {
         Box::pin(async move {
             thread::sleep(Duration::from_secs(10));
-            res.send(Some("slept for 5 seconds")).await;
+            res.send(Some("slept for 10 seconds")).await;
         })
     })
     .await
