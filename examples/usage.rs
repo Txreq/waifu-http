@@ -1,4 +1,4 @@
-use std::{thread, time::Duration};
+// use std::{thread, time::Duration};
 // use async_std::task::sleep;
 use waifu_http::*;
 
@@ -6,24 +6,13 @@ use waifu_http::*;
 async fn main() {
     let mut app = Server::bind(6969).await.expect("failed to bind listener");
     // standard
-    app.get("/", |req, mut res| {
-        Box::pin(async move {
-            // res.send("Hello, world!").await;
-            res.render("index.html").await;
-        })
-    })
-    .await
-    .unwrap();
-
-    // sleep
-    app.get("/sleep", |_req, mut res| {
-        Box::pin(async move {
-            thread::sleep(Duration::from_secs(10));
-            res.send("slept for 10 seconds").await;
-        })
-    })
-    .await
-    .unwrap();
+    app.get("/", |req, res| Box::pin(hello(req, res)))
+        .await
+        .unwrap();
 
     app.listen().await.unwrap();
+}
+
+async fn hello(req: Request, mut res: Response) {
+    res.render("index.html").await;
 }

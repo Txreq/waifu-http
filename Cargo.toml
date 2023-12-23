@@ -13,6 +13,7 @@ futures = "0.3.29"
 log = { version = "0.4", features = ["max_level_debug", "release_max_level_warn"] }
 env_logger = "0.10.1"
 chrono = "0.4.31"
+async-trait = "0.1.75"
 
 [dependencies.async-std]
 version = "1.6"

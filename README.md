@@ -11,18 +11,20 @@ The answer is still: I DO NOT KNOW.
 Obviously:
 
 ```rs
+use waifu_http::*;
+
 #[async_std::main]
 async fn main() {
     let mut app = Server::bind(6969).await.expect("failed to bind listener");
-
-    app.get("/", |req, mut res| {
-        Box::pin(async move {
-            res.send(Some("Hello, world!")).await;
-        })
-    })
-    .await
-    .unwrap();
+    // standard
+    app.get("/", |req, res| Box::pin(hello(req, res)))
+        .await
+        .unwrap();
 
     app.listen().await.unwrap();
+}
+
+async fn hello(req: Request, mut res: Response) {
+    res.render("index.html").await;
 }
 ```
